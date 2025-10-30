@@ -35,21 +35,25 @@
 Обновите apt индекс пакетов и установите пакеты, чтобы разрешить apt использование репозитория через HTTPS:
 
 ```bash
-$ sudo apt-get update
+sudo apt-get update
 ```
 
 ```bash
-$ sudo apt-get install \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
+sudo apt-get install ca-certificates curl gnupg lsb-release
 ```
 
 Добавьте официальный GPG-ключ Docker:
 
 ```bash
-$ curl -fsSL https://download.docker.com/linux/ubuntu gpg | sudo gpg --dearmor -o /usr/share/keyrings docker-archive- keyring.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+```
+
+Добавление репозитория
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 ## Установите Engine Docker
@@ -57,36 +61,46 @@ $ curl -fsSL https://download.docker.com/linux/ubuntu gpg | sudo gpg --dearmor -
 Обновите apt индекс пакета и установите последнюю версию Docker Engine, containerd и Docker Compose:
 
 ```bash
-$ sudo apt-get update
+sudo apt-get update
 ```
 
 ```bash
-$ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
 Убедитесь, что Docker Engine установлен правильно, запустив hello-world образ.
 
 ```bash
-$ sudo docker run hello-world
+sudo docker run hello-world
 ```
 
-```
-Unable to find image 'hello-world:latest' locally 
-latest: Pulling from library/hello-world 
-535020c3e8ad: Pull complete
-af340544ed62: Pull complete
-Digest: sha256:a68868bfe696c00866942e8f5ca39e3e31b79c1e50feae e4ce5e28df2f051d5c
+```bash
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+17eec7bbc9d7: Pull complete
+Digest: sha256:56433a6be389fb548eaed0d7c2656121b911198df065
 Status: Downloaded newer image for hello-world:latest
 
-
-Hello from Docker.
+Hello from Docker!
 This message shows that your installation appears to be working correctly.
 
-
 To generate this message, Docker took the following steps:
-The Docker Engine CLI client contacted the Docker Engine daemon.
-The Docker Engine daemon pulled the "hello-world" image from the Docker Hub.
-The Docker Engine daemon created a new container from that image which runs the
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
 ```
 
 Эта команда загружает тестовый образ и запускает его в контейнере. Когда контейнер запускается, он печатает сообщение и завершает работу.
@@ -94,16 +108,16 @@ The Docker Engine daemon created a new container from that image which runs the
 Теперь выполните `docker ps -a` что бы увидеть все контейнеры в системе.
 
 ```bash
-$ docker ps -a
+sudo docker ps -a
 ```
 
 Вы увидите ваш hello-world контейнер в списке, выведенном командой `docker ps -a`.
 
 Команда `docker ps` отображает только запущенные контейнеры. Поскольку hello-world уже выполнен и завершен, то соответствующий контейнер не отображается по команде docker ps.
 
-| CONTAINER ID | IMAGE | COMMAND | CREATED | STATUS | PORTS | NAMES |
-|--------------|-------|---------|---------|--------|-------|-------|
-| 592376ff3eb8 | hello-world | "/hello" | 25 seconds ago | Exited (0) 24 seconds ago | | no name |
+| CONTAINER ID | IMAGE       | COMMAND  | CREATED        | STATUS                    | PORTS | NAMES   |
+| ------------ | ----------- | -------- | -------------- | ------------------------- | ----- | ------- |
+| 592376ff3eb8 | hello-world | "/hello" | 25 seconds ago | Exited (0) 24 seconds ago |       | no name |
 
 ## Сборка и оптимизация образов на основе Dockerfile
 
@@ -117,19 +131,50 @@ $ docker ps -a
 
 **main.go:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 6]**
+```bash
+package main
+
+import (
+  "fmt"
+  "net/http"
+  "github.com/sirupsen/logrus"
+)
+
+func handle(w http.ResponseWriter, r *http.Request) {
+  fmt.Fprintln(w, "Hello docker!")
+}
+
+func main() {
+  logrus.Info("App run")
+  if err := http.ListenAndServe(":8080", http.HandlerFunc(handle)); err != nil {
+    logrus.Error(err)
+  }
+}
+```
 
 **Dockerfile:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 7]**
+```bash
+  FROM golang:alpine AS builder
+  WORKDIR /src
+  COPY main.go .
+  RUN go mod init hello-docker
+  RUN go mod tidy
+  RUN go build
+  FROM alpine:3.15
+  WORKDIR /app
+  COPY --from=builder /src/hello-docker /app/hello-docker
+  EXPOSE 8080
+  ENTRYPOINT ["/app/hello-docker"]
+```
 
 Производим сборку:
 
 ```bash
-$ docker build . -t hwi
+sudo docker build . -t hwi
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 8]**
+![Запуск пайплайна](img/docker-build.png)
 
 Запускаем собранный образ
 
@@ -155,10 +200,10 @@ $ docker build --target builder . -t hwi-intermediate
 $ docker image ls | grep | hwi
 ```
 
-| Image | Tag | Image ID | Created | Size |
-|-------|-----|----------|---------|------|
-| hwi | latest | b0e8a28756ea | 42 minutes ago | 12MB |
-| hwi-intermediate | latest | ac4dac42fc7e | 2 hours ago | 349MB |
+| Image            | Tag    | Image ID     | Created        | Size  |
+| ---------------- | ------ | ------------ | -------------- | ----- |
+| hwi              | latest | b0e8a28756ea | 42 minutes ago | 12MB  |
+| hwi-intermediate | latest | ac4dac42fc7e | 2 hours ago    | 349MB |
 
 ## Запуск docker-compose с применением различных Network drivers в docker
 
@@ -238,7 +283,7 @@ server {
 => => naming to docker.io/library/2-live-networks_php | 0.0s
 
 
-Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them 
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
 [+] Running 4/4
 Network 2-live-networks_default Created 0.6s
 
@@ -258,7 +303,7 @@ Attaching to 2-live-networks-db-1, 2-live-networks-nginx-1, 2-live-networks-php-
 2-live-networks-db-1 | 2022-06-23T17:27:45.817354Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
 2-live-networks-db-1 | 2022-06-23T17:27:52.307662Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
 2-live-networks-db-1 | 2022-06-23T17:28:02.416249Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2-live-networks-db-1 | 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Database files initialized 
+2-live-networks-db-1 | 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Database files initialized
 2-live-networks-db-1 | 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Starting temporary server
 
 
@@ -278,14 +323,14 @@ Attaching to 2-live-networks-db-1, 2-live-networks-nginx-1, 2-live-networks-php-
 
 
 2-live-networks-db-1 | Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
-2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating database base 
+2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating database base
 2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating user user
 2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Giving user user access to schema base
 2-live-networks-db-1 |
 2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Stopping temporary server
 2-live-networks-db-1 | 2022-06-23T17:28:34.642435Z 13 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.29).
 2-live-networks-db-1 | 2022-06-23T17:28:37.759863Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.29) MySQL Community Server - GPL.
-2-live-networks-db-1 | 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: Temporary server stopped 
+2-live-networks-db-1 | 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: Temporary server stopped
 2-live-networks-db-1 |
 2-live-networks-db-1 | 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: MySQL init process done. Ready for start up.
 2-live-networks-db-1 |
@@ -314,12 +359,12 @@ $ docker ps
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 24]**
 
-| NETWORK ID | NAME | DRIVER | SCOPE |
-|------------|------|--------|-------|
+| NETWORK ID   | NAME                    | DRIVER | SCOPE |
+| ------------ | ----------------------- | ------ | ----- |
 | bb0141995383 | 2-live-networks_default | bridge | local |
-| 0507ad46874b | bridge | bridge | local |
-| 3ceb0f16d293 | host | host | local |
-| 2a3f49dae137 | none | null | local |
+| 0507ad46874b | bridge                  | bridge | local |
+| 3ceb0f16d293 | host                    | host   | local |
+| 2a3f49dae137 | none                    | null   | local |
 
 Остановим наши контейнеры Ctrl+C
 
@@ -352,21 +397,21 @@ $ docker ps
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 30]**
 
 ```json
-"Attachable": false, 
-"Ingress": false, 
+"Attachable": false,
+"Ingress": false,
 "ConfigFrom": {
     "Network": ""
 },
-"ConfigOnly": false, 
+"ConfigOnly": false,
 "Containers": {
-    "5dea4983319a30c0ee6d60a787b0f14e00ad55c112e8934676eebe0ed9f9cfe9": { 
+    "5dea4983319a30c0ee6d60a787b0f14e00ad55c112e8934676eebe0ed9f9cfe9": {
         "Name": "2-live-networks-db-1",
         "EndpointID": "4c686ea32adcb78fe939165027fbd46df4f255109fecc0513dd18ac578b38f4a",
         "MacAddress": "",
         "IPv4Address": "",
         "IPv6Address": ""
     },
-    "a76759d35789864d8de8cf2b2f76b43968284fd18f676b293dc1f9b6c05ca473": { 
+    "a76759d35789864d8de8cf2b2f76b43968284fd18f676b293dc1f9b6c05ca473": {
         "Name": "2-live-networks-php-1",
         "EndpointID": "d815d5f548eb9a0ea1feacfbe2e03331f0852c92d5d7bcf14126eb9e273fc29e",
         "MacAddress": "",
@@ -383,22 +428,22 @@ $ docker ps
 Модифицируем наш файл **Docker-compose.ymal:**
 
 ```yaml
-version: '3'
+version: "3"
 
-services: 
+services:
   nginx:
-    image: nginx:1.17.8 
+    image: nginx:1.17.8
     ports:
       - "8080:80"
     volumes:
       - ./code:/code
-      - ./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf 
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf
     networks:
       - test-network
 
   php:
     build:
-      context: docker/php-fpm 
+      context: docker/php-fpm
     volumes:
       - ./code:/code
       - ./docker/php-fpm/php.ini:/usr/local/etc/php/php.ini
@@ -406,13 +451,13 @@ services:
       - test-network
 
   db:
-    image: mysql:8.0 
-    restart: always 
+    image: mysql:8.0
+    restart: always
     environment:
-      MYSQL_DATABASE: 'base' 
-      MYSQL_USER: 'user' 
-      MYSQL_PASSWORD: '12345' 
-      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: "base"
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "12345"
+      MYSQL_ROOT_PASSWORD: "root"
     volumes:
 ```
 
@@ -430,19 +475,19 @@ $ docker ps
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 32]**
 
-Должно отобразиться три запущенных контейнера. 
+Должно отобразиться три запущенных контейнера.
 
 Посмотрим наши сети:
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 33]**
 
-| NETWORK ID | NAME | DRIVER | SCOPE |
-|------------|------|--------|-------|
-| bb0141995383 | 2-live-networks_default | bridge | local |
+| NETWORK ID   | NAME                         | DRIVER | SCOPE |
+| ------------ | ---------------------------- | ------ | ----- |
+| bb0141995383 | 2-live-networks_default      | bridge | local |
 | 79a9d5184f94 | 2-live-networks_test-network | bridge | local |
-| 0507ad46874b | bridge | bridge | local |
-| 3ceb0f16d293 | host | host | local |
-| 2a3f49dae137 | none | null | local |
+| 0507ad46874b | bridge                       | bridge | local |
+| 3ceb0f16d293 | host                         | host   | local |
+| 2a3f49dae137 | none                         | null   | local |
 
 Видим нашу сеть 2-live-networks_test-network с драйвером bridge.
 
@@ -455,15 +500,15 @@ $ docker network inspect 2-live-networks_test-network
 ```json
 [
   {
-    "Name": "2-live-networks_test-network", 
-    "Id": "79a9d5184f94c77b8bd49362176cf7a0b902744753d988b9198c195591d84e69", 
+    "Name": "2-live-networks_test-network",
+    "Id": "79a9d5184f94c77b8bd49362176cf7a0b902744753d988b9198c195591d84e69",
     "Created": "2022-06-23T17:59:02.9531594Z",
     "Scope": "local",
-    "Driver": "bridge", 
-    "EnableIPv6": false, 
+    "Driver": "bridge",
+    "EnableIPv6": false,
     "IPAM": {
-      "Driver": "default", 
-      "Options": null, 
+      "Driver": "default",
+      "Options": null,
       "Config": [
         {
           "Subnet": "172.19.0.0/16",
@@ -471,15 +516,15 @@ $ docker network inspect 2-live-networks_test-network
         }
       ]
     },
-    "Internal": false, 
-    "Attachable": false, 
-    "Ingress": false, 
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
     "ConfigFrom": {
       "Network": ""
     },
-    "ConfigOnly": false, 
+    "ConfigOnly": false,
     "Containers": {
-      "71d01f006bab7dd6f86290d6a65b7a31e81a4e32d2098a0834b1de977910db24": { 
+      "71d01f006bab7dd6f86290d6a65b7a31e81a4e32d2098a0834b1de977910db24": {
         "Name": "2-live-networks-nginx-1",
         "EndpointID": "dc6b2535cc65eb37049295fb0453c25326c1f0c75db7727d8ad84e9b78d5dc25",
         "MacAddress": "02:42:ac:13:00:04"
@@ -511,12 +556,12 @@ $ docker network inspect 2-live-networks_test-network
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 37]**
 
-| NETWORK ID | NAME | DRIVER | SCOPE |
-|------------|------|--------|-------|
+| NETWORK ID   | NAME                    | DRIVER | SCOPE |
+| ------------ | ----------------------- | ------ | ----- |
 | bb0141995383 | 2-live-networks_default | bridge | local |
-| 0507ad46874b | bridge | bridge | local |
-| 3ceb0f16d293 | host | host | local |
-| 2a3f49dae137 | none | null | local |
+| 0507ad46874b | bridge                  | bridge | local |
+| 3ceb0f16d293 | host                    | host   | local |
+| 2a3f49dae137 | none                    | null   | local |
 
 Пробуем запустить наши контейнеры:
 
@@ -536,13 +581,13 @@ $ docker-compose up
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 40]**
 
-| NETWORK ID | NAME | DRIVER | SCOPE |
-|------------|------|--------|-------|
-| bb0141995383 | 2-live-networks_default | bridge | local |
+| NETWORK ID   | NAME                         | DRIVER | SCOPE |
+| ------------ | ---------------------------- | ------ | ----- |
+| bb0141995383 | 2-live-networks_default      | bridge | local |
 | 113b81a2c1a9 | 2-live-networks_test-network | bridge | local |
-| 0507ad46874b | bridge | bridge | local |
-| 3ceb0f16d293 | host | host | local |
-| 2a3f49dae137 | none | null | local |
+| 0507ad46874b | bridge                       | bridge | local |
+| 3ceb0f16d293 | host                         | host   | local |
+| 2a3f49dae137 | none                         | null   | local |
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 41]**
 
@@ -551,32 +596,32 @@ $ docker-compose up
 ```
 
 ```json
-"Internal": false, 
-"Attachable": false, 
-"Ingress": false, 
+"Internal": false,
+"Attachable": false,
+"Ingress": false,
 "ConfigFrom": {
   "Network": ""
 },
-"ConfigOnly": false, 
+"ConfigOnly": false,
 "Containers": {
   "b40a0e59fcb6888628b85346eee609aae533782f70295118cca52232e87e9345": {
     "Name": "2-live-networks-php-1",
     "EndpointID": "b32865407c8d1bfcc89a3dd6474f65a022ffa08a74d44990b289545984864a01",
-    "MacAddress": "02:42:c0:a8:6e:02", 
+    "MacAddress": "02:42:c0:a8:6e:02",
     "IPv4Address": "192.168.110.2/24",
     "IPv6Address": ""
   },
   "b492b1c207120819e84c42a72316cc8e6c7897d80650a118716371b5a64c20a9": {
     "Name": "2-live-networks-db-1",
     "EndpointID": "00d6777bdf89f7f3726bf154cf1408e26497e30226be4d277e4829f6544c80c8",
-    "MacAddress": "02:42:c0:a8:6e:03", 
+    "MacAddress": "02:42:c0:a8:6e:03",
     "IPv4Address": "192.168.110.3/24",
     "IPv6Address": ""
   },
-  "e67535d50a330ebc9c6aa7d313c852bb7185530a2cddf78edc3aad5ff2032c00": { 
+  "e67535d50a330ebc9c6aa7d313c852bb7185530a2cddf78edc3aad5ff2032c00": {
     "Name": "2-live-networks-nginx-1",
     "EndpointID": "6c86108a7bbd557f34d1e2c077db002a11c160dc8e543d42226686868a7679c5",
-    "MacAddress": "02:42:c0:a8:6e:04", 
+    "MacAddress": "02:42:c0:a8:6e:04",
     "IPv4Address": "192.168.110.4/24",
     "IPv6Address": ""
   }
@@ -606,25 +651,25 @@ $ docker-compose up
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 46]**
 
 ```
-root:x:0:0:root:/root:/bin/bash 
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin 
-bin:x:2:2:bin:/bin:/usr/sbin/nologin 
-sys:x:3:3:sys:/dev:/usr/sbin/nologin 
-sync:x:4:65534:sync:/bin:/bin/sync 
-games:x:5:60:games:/usr/games:/usr/sbin/nologin 
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin 
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin 
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin 
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin 
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin 
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
 proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin 
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
 backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
 list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
 irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
 gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
 nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-_apt:x:100:65534::/nonexistent:/usr/sbin/nologin 
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
 mysql:x:999:999::/home/mysql:/bin/sh
 ```
 
@@ -694,38 +739,38 @@ docker exec -ti mariadb sh
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 63]**
 
-| NAME | READY | STATUS | RESTARTS | AGE |
-|------|-------|--------|----------|-----|
-| adminer | 1/1 | Running | 0 | 5m11s |
+| NAME    | READY | STATUS  | RESTARTS | AGE   |
+| ------- | ----- | ------- | -------- | ----- |
+| adminer | 1/1   | Running | 0        | 5m11s |
 
 Проверим список запущенных сервисов
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 64]**
 
-| NAME | TYPE | CLUSTER-IP | EXTERNAL-IP | PORT(S) | AGE |
-|------|------|------------|-------------|---------|-----|
-| adminer | NodePort | 10.102.229.28 | <none> | 8080:32225/TCP | 96s |
-| kubernetes | ClusterIP | 10.96.0.1 | <none> | 443/TCP | 7m23s |
-| mariadb | ClusterIP | 10.102.61.247 | <none> | 3306/TCP | 2m6s |
+| NAME       | TYPE      | CLUSTER-IP    | EXTERNAL-IP | PORT(S)        | AGE   |
+| ---------- | --------- | ------------- | ----------- | -------------- | ----- |
+| adminer    | NodePort  | 10.102.229.28 | <none>      | 8080:32225/TCP | 96s   |
+| kubernetes | ClusterIP | 10.96.0.1     | <none>      | 443/TCP        | 7m23s |
+| mariadb    | ClusterIP | 10.102.61.247 | <none>      | 3306/TCP       | 2m6s  |
 
 Воспользуемся возможностью локального проброса портов до нужного пода. Выведем список подов с указанием пространства имен:
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 65]**
 
-| NAMESPACE | NAME | READY | STATUS | RESTARTS | AGE |
-|-----------|------|-------|--------|----------|-----|
-| default | adminer | 1/1 | Running | 0 | 26m |
-| default | mariadb | 1/1 | Running | 0 | 26m |
-| kube-system | coredns-f9fd979d6-fq9js | 1/1 | Running | 0 | 27m |
-| kube-system | coredns-f9fd979d6-tmfpv | 1/1 | Running | 0 | 27m |
-| kube-system | etcd-s122-g264-c1 | 1/1 | Running | 0 | 27m |
-| kube-system | kube-apiserver-s122-g264-c1 | 1/1 | Running | 0 | 27m |
-| kube-system | kube-controller-manager-s122-g264-c1 | 1/1 | Running | 0 | 27m |
-| kube-system | kube-flannel-ds-8xmsp | 1/1 | Running | 0 | 27m |
-| kube-system | kube-flannel-ds-crrzw | 1/1 | Running | 0 | 27m |
-| kube-system | kube-proxy-4vjlw | 1/1 | Running | 0 | 27m |
-| kube-system | kube-proxy-xcrgj | 1/1 | Running | 0 | 27m |
-| kube-system | kube-scheduler-s122-g264-c1 | 1/1 | Running | 0 | 27m |
+| NAMESPACE   | NAME                                 | READY | STATUS  | RESTARTS | AGE |
+| ----------- | ------------------------------------ | ----- | ------- | -------- | --- |
+| default     | adminer                              | 1/1   | Running | 0        | 26m |
+| default     | mariadb                              | 1/1   | Running | 0        | 26m |
+| kube-system | coredns-f9fd979d6-fq9js              | 1/1   | Running | 0        | 27m |
+| kube-system | coredns-f9fd979d6-tmfpv              | 1/1   | Running | 0        | 27m |
+| kube-system | etcd-s122-g264-c1                    | 1/1   | Running | 0        | 27m |
+| kube-system | kube-apiserver-s122-g264-c1          | 1/1   | Running | 0        | 27m |
+| kube-system | kube-controller-manager-s122-g264-c1 | 1/1   | Running | 0        | 27m |
+| kube-system | kube-flannel-ds-8xmsp                | 1/1   | Running | 0        | 27m |
+| kube-system | kube-flannel-ds-crrzw                | 1/1   | Running | 0        | 27m |
+| kube-system | kube-proxy-4vjlw                     | 1/1   | Running | 0        | 27m |
+| kube-system | kube-proxy-xcrgj                     | 1/1   | Running | 0        | 27m |
+| kube-system | kube-scheduler-s122-g264-c1          | 1/1   | Running | 0        | 27m |
 
 NAMESPACE, в котором запущен под adminer имеет имя default.
 
@@ -738,8 +783,9 @@ NAMESPACE, в котором запущен под adminer имеет имя def
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 67]**
 
 Проверяем работу, указывая параметры подключения:
+
 - Сервер: mariadb
-- Имя пользователя: root 
+- Имя пользователя: root
 - Пароль: supperpass
 
 **[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 68]**
@@ -819,7 +865,7 @@ helm repo update
 Проинсталируйте базовые компоненты сервисной сетки Istio с помощью HELM
 
 ```bash
-helm install istio-base istio/base -n istio-system 
+helm install istio-base istio/base -n istio-system
 helm install istiod istio/istiod -n istio-system --wait
 ```
 
@@ -867,7 +913,7 @@ kubectl get pods -n mobsf
 kubectl delete pod mobsf-5db69649fc-5nl7t -n mobsf
 ```
 
-(обратите внимание, что в вашем случае будет другое наименование пода, подставьте свое значения из вывода команды `kubectl get pods -n mobsf`) 
+(обратите внимание, что в вашем случае будет другое наименование пода, подставьте свое значения из вывода команды `kubectl get pods -n mobsf`)
 
 поскольку мы с вами создавали deployment для mobsf, удаление пода вызовет ее переразвертывание (но уже с примененным модифицирующим вебхуком от Istio)
 
