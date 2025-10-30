@@ -177,14 +177,17 @@ sudo docker build . -t hwi
 Запускаем собранный образ
 
 ```bash
-sudo docker run hwi -p 8080:8080
-time="2022-06-23T16:15:34Z" level=info msg="App run"
+sudo docker run -p 8080:8080 hwi
 ```
 
 Проверяем доступность запущенного приложеня
 
 ```bash
 curl localhost:8080
+```
+Должно вывести:
+
+```bash
 Hello docker!
 ```
 
@@ -199,11 +202,7 @@ sudo docker build --target builder . -t hwi-intermediate
 Теперь сравним размеры образов
 
 ```bash
-  sudo docker image ls | grep hwi
-```
-
-```bash
-$ docker image ls | grep | hwi
+sudo docker image ls | grep hwi
 ```
 
 | Image            | Tag    | Image ID     | Created        | Size  |
