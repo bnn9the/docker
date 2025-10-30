@@ -213,16 +213,16 @@ sudo docker image ls | grep hwi
 
 ## Запуск docker-compose с применением различных Network drivers в docker
 
-Создаем директорию networks
+Создаем директорию 2-live-networks
 
 В директории создаем следующие директории:
 
 ```bash
-mkdir networks
+mkdir 2-live-networks
 ```
 
 ```bash
-cd ./networks
+cd ./2-live-networks
 ```
 
 ```bash
@@ -235,6 +235,7 @@ mkdir code docker docker/nginx docker/php-fpm
 
 ```yaml
 version: "3"
+
 services:
   nginx:
     image: nginx:1.17.8
@@ -442,6 +443,7 @@ sudo docker network ls
 
 ```yaml
 version: "3"
+
 services:
   nginx:
     image: nginx:1.17.8
@@ -594,7 +596,7 @@ networks:
 
 Добавляем в него описание network drivers bridge
 
-Запускаем контейнеры `docker-compose up`
+Запускаем контейнеры `docker compose up`
 
 ```bash
 sudo docker compose up
@@ -673,23 +675,45 @@ sudo docker network inspect 2-live-networks_test-network
 
 Теперь добавим в секции networks описание IP адресов
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 34]**
+```yaml
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.110.0/24
+```
 
-Запуск контейнеров с новой конфигурацией нужно производить после выполнения команды `docker-compose down`
+Запуск контейнеров с новой конфигурацией нужно производить после выполнения команды `sudo docker compose down`
 
 Мы же воспользуемся «агрессивном» способом с описанием последствий и способа решения возникшей проблемы.
 
 Останавливаем наши контейнеры Ctrl+C.
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 35]**
+```bash
+sudo docker network ls
+```
+
+| NETWORK ID   | NAME                    | DRIVER | SCOPE |
+| ------------ | ----------------------- | ------ | ----- |
+| bb0141995383 | 2-live-networks_default | bridge | local |
+| 0507ad46874b | bridge                  | bridge | local |
+| 3ceb0f16d293 | host                    | host   | local |
+| 2a3f49dae137 | none                    | null   | local |
 
 Из списка сетей копируем имя нашей сети и вставляем ее в команду:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 36]**
+```bash
+sudo docker network rm 2-live-networks_test-network
+```
+
+<!-- cloude -->
 
 Проверяем, что сеть удалена:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 37]**
+```bash
+sudo docker network ls
+```
 
 | NETWORK ID   | NAME                    | DRIVER | SCOPE |
 | ------------ | ----------------------- | ------ | ----- |
@@ -706,15 +730,15 @@ sudo docker compose up
 
 И видим ошибку:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 38]**
+![Запуск пайплайна](img/docker-compose-up-error.png)
 
 Чтобы ее исправить запускаем ниши контейнеры с флагом `--force-recreate`
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 39]**
-
 Проверим список сетей и проинспектируем нашу сеть и убедимся, что применилась наша конфигурация.
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 40]**
+```bash
+sudo docker network ls
+```
 
 | NETWORK ID   | NAME                         | DRIVER | SCOPE |
 | ------------ | ---------------------------- | ------ | ----- |
@@ -724,50 +748,77 @@ sudo docker compose up
 | 3ceb0f16d293 | host                         | host   | local |
 | 2a3f49dae137 | none                         | null   | local |
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 41]**
-
-```json
-"Subnet": "192.168.110.0/24"
+```bash
+sudo docker network inspect 2-live-networks_test-network
 ```
 
 ```json
-"Internal": false,
-"Attachable": false,
-"Ingress": false,
-"ConfigFrom": {
-  "Network": ""
-},
-"ConfigOnly": false,
-"Containers": {
-  "b40a0e59fcb6888628b85346eee609aae533782f70295118cca52232e87e9345": {
-    "Name": "2-live-networks-php-1",
-    "EndpointID": "b32865407c8d1bfcc89a3dd6474f65a022ffa08a74d44990b289545984864a01",
-    "MacAddress": "02:42:c0:a8:6e:02",
-    "IPv4Address": "192.168.110.2/24",
-    "IPv6Address": ""
-  },
-  "b492b1c207120819e84c42a72316cc8e6c7897d80650a118716371b5a64c20a9": {
-    "Name": "2-live-networks-db-1",
-    "EndpointID": "00d6777bdf89f7f3726bf154cf1408e26497e30226be4d277e4829f6544c80c8",
-    "MacAddress": "02:42:c0:a8:6e:03",
-    "IPv4Address": "192.168.110.3/24",
-    "IPv6Address": ""
-  },
-  "e67535d50a330ebc9c6aa7d313c852bb7185530a2cddf78edc3aad5ff2032c00": {
-    "Name": "2-live-networks-nginx-1",
-    "EndpointID": "6c86108a7bbd557f34d1e2c077db002a11c160dc8e543d42226686868a7679c5",
-    "MacAddress": "02:42:c0:a8:6e:04",
-    "IPv4Address": "192.168.110.4/24",
-    "IPv6Address": ""
+[
+  {
+    "Name": "2-live-networks_test-network",
+    "Id": "2bc38ef756785c7c0b090677d39c628c8eb5efb37f50046e7cbf024284bc0cd1",
+    "Created": "2022-06-23T18:28:35.1209514Z",
+    "Scope": "local",
+    "Driver": "bridge",
+    "EnableIPv6": false,
+    "IPAM": {
+      "Driver": "default",
+      "Options": null,
+      "Config": [
+        {
+          "Subnet": "192.168.110.0/24"
+        }
+      ]
+    },
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
+    "ConfigFrom": {
+      "Network": ""
+    },
+    "ConfigOnly": false,
+    "Containers": {
+      "b40a0e59fcb6888628b85346eee609aae533782f70295118cca52232e87e9345": {
+        "Name": "2-live-networks-php-1",
+        "EndpointID": "b32865407c8d1bfcc89a3dd6474f65a022ffa08a74d44990b289545984864a01",
+        "MacAddress": "02:42:c0:a8:6e:02",
+        "IPv4Address": "192.168.110.2/24",
+        "IPv6Address": ""
+      },
+
+      "b492b1c207120819e84c42a72316cc8e6c7897d80650a118716371b5a64c20a9": {
+        "Name": "2-live-networks-db-1",
+        "EndpointID": "00d6777bdf89f7f3726bf154cf1408e26497e30226be4d277e4829f6544c80c8",
+        "MacAddress": "02:42:c0:a8:6e:03",
+        "IPv4Address": "192.168.110.3/24",
+        "IPv6Address": ""
+      },
+
+      "e67535d50a330ebc9c6aa7d313c852bb7185530a2cddf78edc3aad5ff2032c00": {
+        "Name": "2-live-networks-nginx-1",
+        "EndpointID": "6c86108a7bbd557f34d1e2c077db002a11c160dc8e543d42226686868a7679c5",
+        "MacAddress": "02:42:c0:a8:6e:04",
+        "IPv4Address": "192.168.110.4/24",
+        "IPv6Address": ""
+      }
+    },
+    "Options": {},
+    "Labels": {
+      "com.docker.compose.network": "test-network",
+      "com.docker.compose.project": "2-live-networks",
+      "com.docker.compose.version": "2.5.1"
+    }
   }
-}
+]
 ```
 
 ## Построение информационной безопасности контейнеров
 
 Запускаем контейнеры командой:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 42]**
+```bash
+docker run -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
+```
 
 Дождемся загрузки и разворачивания контейнеров. Проверяем, что контейнер запущен:
 
