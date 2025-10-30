@@ -34,23 +34,35 @@
 
 Обновите apt индекс пакетов и установите пакеты, чтобы разрешить apt использование репозитория через HTTPS:
 
+```bash
 $ sudo apt-get update
+```
 
-
-$ sudo apt-get install \ ca-certificates \ curl \
-gnupg \
-lsb-release
-
+```bash
+$ sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+```
 
 Добавьте официальный GPG-ключ Docker:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 2]**
+```bash
+$ curl -fsSL https://download.docker.com/linux/ubuntu gpg | sudo gpg --dearmor -o /usr/share/keyrings docker-archive- keyring.gpg
+```
 
 ## Установите Engine Docker
 
 Обновите apt индекс пакета и установите последнюю версию Docker Engine, containerd и Docker Compose:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 3]**
+```bash
+$ sudo apt-get update
+```
+
+```bash
+$ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+```
 
 Убедитесь, что Docker Engine установлен правильно, запустив hello-world образ.
 
@@ -81,7 +93,9 @@ The Docker Engine daemon created a new container from that image which runs the
 
 Теперь выполните `docker ps -a` что бы увидеть все контейнеры в системе.
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 4]**
+```bash
+$ docker ps -a
+```
 
 Вы увидите ваш hello-world контейнер в списке, выведенном командой `docker ps -a`.
 
