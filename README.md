@@ -74,7 +74,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo docker run hello-world
 ```
 
-```bash
+```
 Unable to find image 'hello-world:latest' locally
 latest: Pulling from library/hello-world
 17eec7bbc9d7: Pull complete
@@ -105,7 +105,7 @@ For more examples and ideas, visit:
 
 Эта команда загружает тестовый образ и запускает его в контейнере. Когда контейнер запускается, он печатает сообщение и завершает работу.
 
-Теперь выполните `docker ps -a` что бы увидеть все контейнеры в системе.
+Теперь выполните `docker ps -a`, чтобы увидеть все контейнеры в системе.
 
 ```bash
 sudo docker ps -a
@@ -113,19 +113,19 @@ sudo docker ps -a
 
 Вы увидите ваш hello-world контейнер в списке, выведенном командой `docker ps -a`.
 
-Команда `docker ps` отображает только запущенные контейнеры. Поскольку hello-world уже выполнен и завершен, то соответствующий контейнер не отображается по команде docker ps.
+Команда `docker ps` отображает только запущенные контейнеры. Поскольку hello-world уже выполнен и завершён, то соответствующий контейнер не отображается по команде docker ps.
 
-| CONTAINER ID | IMAGE       | COMMAND  | CREATED        | STATUS                    | PORTS | NAMES   |
-| ------------ | ----------- | -------- | -------------- | ------------------------- | ----- | ------- |
-| 592376ff3eb8 | hello-world | "/hello" | 25 seconds ago | Exited (0) 24 seconds ago |       | no name |
+| CONTAINER ID | IMAGE       | COMMAND  | CREATED        | STATUS                    | PORTS | NAMES |
+| ------------ | ----------- | -------- | -------------- | ------------------------- | ----- | ----- |
+| 592376ff3eb8 | hello-world | "/hello" | 25 seconds ago | Exited (0) 24 seconds ago |       |       |
 
 ## Сборка и оптимизация образов на основе Dockerfile
 
 Для выполнения этого задания нужно установить docker-compose
 
-Создаем директорию hello-docker
+Создаём директорию hello-docker
 
-Создаем в ней два файла:
+Создаём в ней два файла:
 
 **main.go:**
 
@@ -172,7 +172,7 @@ func main() {
 sudo docker build . -t hwi
 ```
 
-![Запуск пайплайна](img/docker-build.png)
+![docker-build](img/docker-build.png)
 
 Запускаем собранный образ
 
@@ -180,7 +180,7 @@ sudo docker build . -t hwi
 sudo docker run -p 8080:8080 hwi
 ```
 
-Проверяем доступность запущенного приложеня
+Проверяем доступность запущенного приложения
 
 ```bash
 curl localhost:8080
@@ -188,7 +188,7 @@ curl localhost:8080
 
 Должно вывести:
 
-```bash
+```
 Hello docker!
 ```
 
@@ -198,7 +198,7 @@ Hello docker!
 sudo docker build --target builder . -t hwi-intermediate
 ```
 
-![Запуск пайплайна](img/docker-build-2.png)
+![docker-build](img/docker-build-2.png)
 
 Теперь сравним размеры образов
 
@@ -213,9 +213,9 @@ sudo docker image ls | grep hwi
 
 ## Запуск docker-compose с применением различных Network drivers в docker
 
-Создаем директорию 2-live-networks
+Создаём директорию 2-live-networks
 
-В директории создаем следующие директории:
+В директории создаём следующие директории:
 
 ```bash
 mkdir 2-live-networks
@@ -229,7 +229,7 @@ cd ./2-live-networks
 mkdir code docker docker/nginx docker/php-fpm
 ```
 
-В директориях создаем следующие файлы:
+В директориях создаём следующие файлы:
 
 **docker-compose.yaml:**
 
@@ -286,10 +286,11 @@ server {
 
   location ~ \.php$ {
     try_files $uri =404;
-    fastcgi_split_path_info ^(.+\.php)(/.+)$; fastcgi_pass php:9000;
+    fastcgi_split_path_info ^(.+\.php)(/.+)$;
+    fastcgi_pass php:9000;
     fastcgi_index index.php;
-    include fastcgi_params; fastcgi_param SCRIPT_FILENAME
-    $document_root$fastcgi_script_name;
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     fastcgi_param PATH_INFO $fastcgi_path_info;
   }
 }
@@ -319,9 +320,9 @@ max_input_time = 1000
 sudo docker compose up
 ```
 
-Подождем этап сборки и запуска приложений в контейнерах:
+Подождём этап сборки и запуска приложений в контейнерах:
 
-```bash
+```
 [+] Building 100.3s (7/7) FINISHED
 => [internal] load build definition from Dockerfile
 => => transferring dockerfile: 160B
@@ -422,7 +423,7 @@ for this channel.
 sudo docker ps
 ```
 
-![Запуск пайплайна](img/docker-ps.png)
+![docker-ps](img/docker-ps.png)
 
 Проинспектируем созданные сети:
 
@@ -485,7 +486,7 @@ services:
 sudo docker compose up
 ```
 
-![Запуск пайплайна](img/docker-compose-up.png)
+![docker-compose-up](img/docker-compose-up.png)
 
 Видим, что контейнер nginx не запустился.
 
@@ -495,7 +496,7 @@ sudo docker compose up
 sudo docker ps
 ```
 
-![Запуск пайплайна](img/docker-ps-2.png)
+![docker-ps-2](img/docker-ps-2.png)
 
 Проинспектируем network drivers:
 
@@ -503,7 +504,7 @@ sudo docker ps
 sudo docker network inspect none
 ```
 
-```json
+```
 [
   {
     "Name": "none",
@@ -547,7 +548,7 @@ sudo docker network inspect none
 ]
 ```
 
-Видим, что в такой конфигурации, когда контейнеры изолированы nginx не может запуститься.
+Видим, что в такой конфигурации, когда контейнеры изолированы, nginx не может запуститься.
 
 Модифицируем наш файл **docker-compose.yaml:**
 
@@ -608,7 +609,7 @@ sudo docker compose up
 sudo docker ps
 ```
 
-![Запуск пайплайна](img/docker-ps-3.png)
+![docker-ps-3](img/docker-ps-3.png)
 
 Должно отобразиться три запущенных контейнера.
 
@@ -634,7 +635,7 @@ sudo docker network ls
 sudo docker network inspect 2-live-networks_test-network
 ```
 
-```json
+```
 [
   {
     "Name": "2-live-networks_test-network",
@@ -684,9 +685,9 @@ networks:
         - subnet: 192.168.110.0/24
 ```
 
-Запуск контейнеров с новой конфигурацией нужно производить после выполнения команды `sudo docker compose down`
+Запуск контейнеров с новой конфигурацией нужно производить после выполнения команды `sudo docker compose down`.
 
-Мы же воспользуемся «агрессивном» способом с описанием последствий и способа решения возникшей проблемы.
+Мы же воспользуемся «агрессивным» способом с описанием последствий и способа решения возникшей проблемы.
 
 Останавливаем наши контейнеры Ctrl+C.
 
@@ -701,13 +702,11 @@ sudo docker network ls
 | 3ceb0f16d293 | host                    | host   | local |
 | 2a3f49dae137 | none                    | null   | local |
 
-Из списка сетей копируем имя нашей сети и вставляем ее в команду:
+Из списка сетей копируем имя нашей сети и вставляем её в команду:
 
 ```bash
 sudo docker network rm 2-live-networks_test-network
 ```
-
-<!-- cloude -->
 
 Проверяем, что сеть удалена:
 
@@ -730,9 +729,9 @@ sudo docker compose up
 
 И видим ошибку:
 
-![Запуск пайплайна](img/docker-compose-up-error.png)
+![docker-compose-up-error](img/docker-compose-up-error.png)
 
-Чтобы ее исправить запускаем ниши контейнеры с флагом `--force-recreate`
+Чтобы её исправить, запускаем наши контейнеры с флагом `--force-recreate`
 
 Проверим список сетей и проинспектируем нашу сеть и убедимся, что применилась наша конфигурация.
 
@@ -752,7 +751,7 @@ sudo docker network ls
 sudo docker network inspect 2-live-networks_test-network
 ```
 
-```json
+```
 [
   {
     "Name": "2-live-networks_test-network",
@@ -820,27 +819,25 @@ sudo docker network inspect 2-live-networks_test-network
 sudo docker run -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
 ```
 
-Дождемся загрузки и разворачивания контейнеров. Проверяем, что контейнер запущен:
+Дождёмся загрузки и разворачивания контейнеров. Проверяем, что контейнер запущен:
 
 ```bash
 sudo docker ps
 ```
 
-Зайдем «внутрь» контейнера:
+Зайдём «внутрь» контейнера:
 
 ```bash
 sudo docker exec -ti mariadb sh
 ```
 
-Смотрим из-под какого пользователя мы зашли:
+Смотрим, из-под какого пользователя мы зашли:
 
 ```bash
 whoami
 ```
 
-```bash
-root
-```
+`root`
 
 Выведем список всех пользователей:
 
@@ -891,23 +888,19 @@ sudo docker rm mariadb
 sudo docker run -u 999 -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
 ```
 
-Смотрим под каким пользователем теперь зашли и сможем ли мы перейти в каталог root?
+Смотрим, под каким пользователем теперь зашли, и сможем ли мы перейти в каталог root?
 
 ```bash
 whoami
 ```
 
-```bash
-Mysql
-```
+`mysql`
 
 ```bash
 cd /root/
 ```
 
-```bash
-sh: 2: cd: can't cd to /root/
-```
+`sh: 2: cd: can't cd to /root/`
 
 ```bash
 exit
@@ -937,15 +930,13 @@ docker exec -ti mariadb sh
 whoami
 ```
 
-```bash
-root
-```
+`root`
 
 ```bash
 ip link
 ```
 
-```bash
+```
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
 link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
@@ -961,9 +952,7 @@ link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
 ip link delete eth0
 ```
 
-```bash
-RTNETLINK answers: Operation not permitted
-```
+`RTNETLINK answers: Operation not permitted`
 
 ```bash
 exit
@@ -979,15 +968,13 @@ sudo docker run --privileged -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_RO
 whoami
 ```
 
-```bash
-root
-```
+`root`
 
 ```bash
 ip link
 ```
 
-```bash
+```
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
 link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
@@ -1007,7 +994,7 @@ ip link delete eth0
 ip link
 ```
 
-```bash
+```
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
 link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
@@ -1022,4 +1009,4 @@ exit
 
 ## Результат успешного выполнения задания:
 
-![Запуск пайплайна](img/final.png)
+![final](img/final.png)
