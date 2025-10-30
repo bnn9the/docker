@@ -123,8 +123,6 @@ sudo docker ps -a
 
 Для выполнения этого задания нужно установить docker-compose
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 5]**
-
 Создаем директорию hello-docker
 
 Создаем в ней два файла:
@@ -178,23 +176,31 @@ sudo docker build . -t hwi
 
 Запускаем собранный образ
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 9]**
+```bash
+sudo docker run hwi -p 8080:8080
+time="2022-06-23T16:15:34Z" level=info msg="App run"
+```
 
 Проверяем доступность запущенного приложеня
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 10]**
+```bash
+curl localhost:8080
+Hello docker!
+```
 
 Для сравнения размеров образов полученного приложения и образа со средой компиляции приложения go выполним следующую сборку:
 
 ```bash
-$ docker build --target builder . -t hwi-intermediate
+sudo docker build --target builder . -t hwi-intermediate
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 11]**
+![Запуск пайплайна](img/docker-build-2.png)
 
 Теперь сравним размеры образов
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 12]**
+```bash
+  sudo docker image ls | grep hwi
+```
 
 ```bash
 $ docker image ls | grep | hwi
