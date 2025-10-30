@@ -817,24 +817,36 @@ sudo docker network inspect 2-live-networks_test-network
 Запускаем контейнеры командой:
 
 ```bash
-docker run -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
+sudo docker run -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
 ```
 
 Дождемся загрузки и разворачивания контейнеров. Проверяем, что контейнер запущен:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 43]**
+```bash
+sudo docker ps
+```
 
 Зайдем «внутрь» контейнера:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 44]**
+```bash
+sudo docker exec -ti mariadb sh
+```
 
 Смотрим из-под какого пользователя мы зашли:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 45]**
+```bash
+whoami
+```
+
+```bash
+root
+```
 
 Выведем список всех пользователей:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 46]**
+```bash
+cat etc/passwd
+```
 
 ```
 root:x:0:0:root:/root:/bin/bash
@@ -859,274 +871,155 @@ _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
 mysql:x:999:999::/home/mysql:/bin/sh
 ```
 
-Видим, что среди пользователей есть пользователь mysql 999
+Видим, что среди пользователей есть пользователь `mysql 999`
 
-Выходим из shell командой exit. Останавливаем контейнер и удаляем его
+Выходим из shell командой `exit`.
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 47]**
+Останавливаем контейнер и удаляем его
+
+```bash
+sudo docker stop mariadb
+```
+
+```bash
+sudo docker rm mariadb
+```
 
 Запускаем контейнер с флагом -u(user) 999
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 48]**
+```bash
+sudo docker run -u 999 -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
+```
 
 Смотрим под каким пользователем теперь зашли и сможем ли мы перейти в каталог root?
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 49]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 50]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 51]**
+```bash
+whoami
+```
 
 ```bash
-$ exit
+Mysql
+```
+
+```bash
+cd /root/
+```
+
+```bash
+sh: 2: cd: can't cd to /root/
+```
+
+```bash
+exit
 ```
 
 Останавливаем контейнер и удаляем его
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 52]**
+```bash
+sudo docker stop mariadb
+```
+
+```bash
+sudo docker rm mariadb
+```
 
 Теперь убедимся, что при стандартном запуске контейнера мы не сможем, например, удалить сетевой интерфейс.
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 53]**
+```bash
+sudo docker run -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
+```
 
 ```bash
 docker exec -ti mariadb sh
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 54]**
+```bash
+whoami
+```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 55]**
+```bash
+root
+```
+
+```bash
+ip link
+```
+
+```bash
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/ipip 0.0.0.0 brd 0.0.0.0
+3: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/sit 0.0.0.0 brd 0.0.0.0
+115: eth0@if116: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc
+noqueue state UP mode DEFAULT group default
+link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+```
+
+```bash
+ip link delete eth0
+```
+
+```bash
+RTNETLINK answers: Operation not permitted
+```
+
+```bash
+exit
+```
 
 Запустим контейнер с ключом `--privileged` и убедимся, что теперь сможем удалить сетевой интерфейс:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 56]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 57]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 58]**
-
-## Запуск контейнеров mariadb+adminer в kubernetes
-
-Запускаем mariadb
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 59]**
-
-Запускаем adminer
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 60]**
-
-Открываем «межподовое» взаимодействие
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 61]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 62]**
-
-Проверим список запущенных подов
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 63]**
-
-| NAME    | READY | STATUS  | RESTARTS | AGE   |
-| ------- | ----- | ------- | -------- | ----- |
-| adminer | 1/1   | Running | 0        | 5m11s |
-
-Проверим список запущенных сервисов
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 64]**
-
-| NAME       | TYPE      | CLUSTER-IP    | EXTERNAL-IP | PORT(S)        | AGE   |
-| ---------- | --------- | ------------- | ----------- | -------------- | ----- |
-| adminer    | NodePort  | 10.102.229.28 | <none>      | 8080:32225/TCP | 96s   |
-| kubernetes | ClusterIP | 10.96.0.1     | <none>      | 443/TCP        | 7m23s |
-| mariadb    | ClusterIP | 10.102.61.247 | <none>      | 3306/TCP       | 2m6s  |
-
-Воспользуемся возможностью локального проброса портов до нужного пода. Выведем список подов с указанием пространства имен:
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 65]**
-
-| NAMESPACE   | NAME                                 | READY | STATUS  | RESTARTS | AGE |
-| ----------- | ------------------------------------ | ----- | ------- | -------- | --- |
-| default     | adminer                              | 1/1   | Running | 0        | 26m |
-| default     | mariadb                              | 1/1   | Running | 0        | 26m |
-| kube-system | coredns-f9fd979d6-fq9js              | 1/1   | Running | 0        | 27m |
-| kube-system | coredns-f9fd979d6-tmfpv              | 1/1   | Running | 0        | 27m |
-| kube-system | etcd-s122-g264-c1                    | 1/1   | Running | 0        | 27m |
-| kube-system | kube-apiserver-s122-g264-c1          | 1/1   | Running | 0        | 27m |
-| kube-system | kube-controller-manager-s122-g264-c1 | 1/1   | Running | 0        | 27m |
-| kube-system | kube-flannel-ds-8xmsp                | 1/1   | Running | 0        | 27m |
-| kube-system | kube-flannel-ds-crrzw                | 1/1   | Running | 0        | 27m |
-| kube-system | kube-proxy-4vjlw                     | 1/1   | Running | 0        | 27m |
-| kube-system | kube-proxy-xcrgj                     | 1/1   | Running | 0        | 27m |
-| kube-system | kube-scheduler-s122-g264-c1          | 1/1   | Running | 0        | 27m |
-
-NAMESPACE, в котором запущен под adminer имеет имя default.
-
-Команда проброса портов будет выглядеть следующим образом:
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 66]**
-
-Зайдем в браузере по адресу http://localhost:8080/
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 67]**
-
-Проверяем работу, указывая параметры подключения:
-
-- Сервер: mariadb
-- Имя пользователя: root
-- Пароль: supperpass
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 68]**
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 69]**
-
-## Развертывание инструментов DevOps/DevSecOps в DE k8s-managed-sevice
-
-Используя заранее созданный кластер на платформе DE, скачайте kubeconfig. При выполнении задания используйте утилиту kubectl. При отправке команд, указывайте флаг kubeconfig для передачи токена и адреса подключения к кластеру DE k8s-managed-sevice
+```bash
+sudo docker run --privileged -p 127.0.0.1:3306:3306 --name mariadb -e MARIADB_ROOT_PASSWORD=superpass -d mariadb
+```
 
 ```bash
-kubectl get nodes --kubeconfig='<путь-до-kubeconfig>'
+whoami
 ```
-
-### Инсталяция инструмента MobSF
-
-Создайте неймспейс для инструмента MobSF
 
 ```bash
-kubectl create ns mobsf
+root
 ```
-
-Создайте deployment Mobsf
 
 ```bash
-kubectl create deployment mobsf --image=opensecurity/mobile-security-framework-mobsf:v3.1.1 -n mobsf
+ip link
 ```
-
-(деплоймент позволяет отслеживать количество подов и сервисов, выполнять их обновление и модификацию)
-
-Создайте службу для пода MobSF
 
 ```bash
-kubectl expose deployment mobsf --port=8000 --type=NodePort -n mobsf
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/ipip 0.0.0.0 brd 0.0.0.0
+3: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/sit 0.0.0.0 brd 0.0.0.0
+117: eth0@if118: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc
+noqueue state UP mode DEFAULT group default
+link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff link-netnsid 0
 ```
-
-Если вы используете ингресс-контроллер для обработки входящих соединений в кластере, узнайте его external-ip
 
 ```bash
-kubectl get svc -n kube-system
+ip link delete eth0
 ```
-
-Узнайте, какой порт на хосте был выделен службы MobSF
 
 ```bash
-kubectl get svc -n mobsf
+ip link
 ```
-
-Используя браузер, перейдите по адресу (ip:port) и откройте веб-интерфейс MobSF
-
-```
-http://172.26.0.3:31278
-```
-
-### Инсталяция инструмента Istio, плагинов, применение модифицирующего вебхука к инструменту MobSF для развертывания сервисной сетки
-
-Создайте собственный неймспейс для Istio
 
 ```bash
-kubectl create ns istio-system
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/ipip 0.0.0.0 brd 0.0.0.0
+3: sit0@NONE: <NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+link/sit 0.0.0.0 brd 0.0.0.0
 ```
-
-Проинсталируйте helm (https://helm.sh/docs/intro/install/)
-
-Добавьте репозиторий Istio в Helm
 
 ```bash
-helm repo add istio https://istio-release.storage.googleapis.com/charts
+exit
 ```
-
-Выполните апдейт репозиториев
-
-```bash
-helm repo update
-```
-
-Проинсталируйте базовые компоненты сервисной сетки Istio с помощью HELM
-
-```bash
-helm install istio-base istio/base -n istio-system
-helm install istiod istio/istiod -n istio-system --wait
-```
-
-Проинсталируйте интегрированный в Istio дашборд Kiali через плагин
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.13/samples/addons/kiali.yaml
-```
-
-Модифицируйте манифест проинсталированной службы Kiali
-
-```bash
-kubectl edit svc kiali -n istio-system
-```
-
-учимся модифицировать манифест: ищем в спецификации `type: ClusterIP` и меняем его на `type: NodePort`
-
-тем самым используя сеть хоста
-
-сохраняем изменения, получаем уведомление, что service/kiali edited
-
-Проинсталлируйте интегрированный в Istio интегрированный инструмент по сбору метрик Prometheus через плагин
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.13/samples/addons/prometheus.yaml
-```
-
-Применяем модицифирующий вебхук к неймспесу с инструментом Mobsf
-
-```bash
-kubectl label namespace mobsf istio-injection=enabled
-```
-
-получаем уведомление, что namespace/mobsf labeled
-
-Получаем информацию о поде с инструментом MobSF
-
-```bash
-kubectl get pods -n mobsf
-```
-
-Удаляем под с MobSf
-
-```bash
-kubectl delete pod mobsf-5db69649fc-5nl7t -n mobsf
-```
-
-(обратите внимание, что в вашем случае будет другое наименование пода, подставьте свое значения из вывода команды `kubectl get pods -n mobsf`)
-
-поскольку мы с вами создавали deployment для mobsf, удаление пода вызовет ее переразвертывание (но уже с примененным модифицирующим вебхуком от Istio)
-
-вызовите снова команду `kubectl get pods -n mobsf`
-
-и обратите внимание на вывод, в графе READY вы теперь видите "2/2", это означает, что в поде теперь находятся 2 контейнера - один это контейнер с mobsf, второй - это sidecar который внедрился Istio. Sidecar - это контейнер с прокси-сервером Envoy, который будет сообщать Istio о всех действиях контейнера)
-
-Выполните команду и определите, по какому порту запущен дашборд kiali
-
-```bash
-kubectl get svc -n istio-system
-```
-
-Перейдите по адресу хоста, подставив обнаруженный порт службы kiali. Откроется интерфейс дашборда.
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 70]**
-
-Отерыв интерфейс дашборда kiali, перейдите в раздел "Graph", выберите namespace Mobsf в выпадающем списке "Select namespaces"
-
-Во временном фильтре в правой верхней части экрана установите вместо "Last 1m" значение "Last 1d"
-
-Перейдите в интерфейс MobSF и выполните имитацию полезной нагрузки (попереключайтесь между вкладками RECENT SCANS и главной страницей несколько раз)
-
-Перейдите обратно в kiali и немного подождите, вы получите визуализацию активности внутри построенной вами сервисной сетки (см. приложенный скриншот "service-mesh-in-action.jpg".
-
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 71]**
 
 ## Результат успешного выполнения задания:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 72]**
+![Запуск пайплайна](img/final.png)
