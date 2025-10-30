@@ -231,37 +231,36 @@ mkdir code docker docker/nginx docker/php-fpm
 
 В директориях создаем следующие файлы:
 
-**Docker-compose.ymal:**
+**docker-compose.yaml:**
 
-```bash
-version: '3' services:
+```yaml
+version: "3"
+services:
   nginx:
     image: nginx:1.17.8
-  ports:
-    - "8080:80"
-  volumes:
-    -	./code:/code
-    -	./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf
-
+    ports:
+      - "8080:80"
+    volumes:
+      - ./code:/code
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf
 
   php:
     build:
       context: docker/php-fpm
-      volumes:
-        -	./code:/code
-        -	./docker/php-fpm/php.ini:/usr/local/etc/php/php.ini
-
+    volumes:
+      - ./code:/code
+      - ./docker/php-fpm/php.ini:/usr/local/etc/php/php.ini
 
   db:
-    ysql:8.0
+    image: mysql:8.0
     restart: always
     environment:
-      MYSQL_DATABASE: 'base'
-      MYSQL_USER: 'user'
-      MYSQL_PASSWORD: '12345'
-      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: "base"
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "12345"
+      MYSQL_ROOT_PASSWORD: "root"
     volumes:
-      -	./docker/db:/var/lib/mysql
+      - ./docker/db:/var/lib/mysql
     ports:
       - "3306:3306"
 ```
@@ -316,7 +315,7 @@ max_input_time = 1000
 Запускаем сборку:
 
 ```bash
-sudo docker-compose up
+sudo docker compose up
 ```
 
 Подождем этап сборки и запуска приложений в контейнерах:
@@ -419,14 +418,16 @@ for this channel.
 Проверяем запуск наших контейнеров:
 
 ```bash
-$ docker ps
+sudo docker ps
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 23]**
+![Запуск пайплайна](img/docker-ps.png)
 
 Проинспектируем созданные сети:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 24]**
+```bash
+sudo docker network ls
+```
 
 | NETWORK ID   | NAME                    | DRIVER | SCOPE |
 | ------------ | ----------------------- | ------ | ----- |
@@ -437,64 +438,116 @@ $ docker ps
 
 Остановим наши контейнеры Ctrl+C
 
-Модифицируем файл **Docker-compose.ymal:**
+Модифицируем файл **docker-compose.yaml:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 25]**
+```yaml
+version: "3"
+services:
+  nginx:
+    image: nginx:1.17.8
+    ports:
+      - "8080:80"
+    volumes:
+      - ./code:/code
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf
+    network_mode: none
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 26]**
+  php:
+    build:
+      context: docker/php-fpm
+    volumes:
+      - ./code:/code
+      - ./docker/php-fpm/php.ini:/usr/local/etc/php/php.ini
+    network_mode: none
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 27]**
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: "base"
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "12345"
+      MYSQL_ROOT_PASSWORD: "root"
+    volumes:
+      - ./docker/db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    network_mode: none
+```
 
 Добавили в каждый блок описания сервиса `network_mode: none`
 
-Запускаем наши контейнеры `$ docker-compose up`
+Запускаем наши контейнеры `docker compose up`
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 28]**
+```bash
+sudo docker compose up
+```
+
+![Запуск пайплайна](img/docker-compose-up.png)
 
 Видим, что контейнер nginx не запустился.
 
 Проверяем какие контейнеры запущены и обращаем внимание на то, что в этот раз порты никакие не используются:
 
 ```bash
-$ docker ps
+sudo docker ps
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 29]**
+![Запуск пайплайна](img/docker-ps-2.png)
 
 Проинспектируем network drivers:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 30]**
+```bash
+sudo docker network inspect none
+```
 
 ```json
-"Attachable": false,
-"Ingress": false,
-"ConfigFrom": {
-    "Network": ""
-},
-"ConfigOnly": false,
-"Containers": {
-    "5dea4983319a30c0ee6d60a787b0f14e00ad55c112e8934676eebe0ed9f9cfe9": {
+[
+  {
+    "Name": "none",
+    "Id": "2a3f49dae13719941a5eeb45ee8b037d3fc9d331fa94307356880c5e24a8e445",
+    "Created": "2021-11-03T17:12:40.0687775Z",
+    "Scope": "local",
+    "Driver": "null",
+    "EnableIPv6": false,
+    "IPAM": {
+      "Driver": "default",
+      "Options": null,
+      "Config": []
+    },
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
+    "ConfigFrom": {
+      "Network": ""
+    },
+    "ConfigOnly": false,
+    "Containers": {
+      "5dea4983319a30c0ee6d60a787b0f14e00ad55c112e8934676eebe0ed9f9cfe9": {
         "Name": "2-live-networks-db-1",
         "EndpointID": "4c686ea32adcb78fe939165027fbd46df4f255109fecc0513dd18ac578b38f4a",
         "MacAddress": "",
         "IPv4Address": "",
         "IPv6Address": ""
-    },
-    "a76759d35789864d8de8cf2b2f76b43968284fd18f676b293dc1f9b6c05ca473": {
+      },
+
+      "a76759d35789864d8de8cf2b2f76b43968284fd18f676b293dc1f9b6c05ca473": {
         "Name": "2-live-networks-php-1",
         "EndpointID": "d815d5f548eb9a0ea1feacfbe2e03331f0852c92d5d7bcf14126eb9e273fc29e",
         "MacAddress": "",
         "IPv4Address": "",
         "IPv6Address": ""
-    }
-},
-"Options": {},
-"Labels": {}
+      }
+    },
+    "Options": {},
+    "Labels": {}
+  }
+]
 ```
 
 Видим, что в такой конфигурации, когда контейнеры изолированы nginx не может запуститься.
 
-Модифицируем наш файл **Docker-compose.ymal:**
+Модифицируем наш файл **docker-compose.yaml:**
 
 ```yaml
 version: "3"
@@ -528,27 +581,40 @@ services:
       MYSQL_PASSWORD: "12345"
       MYSQL_ROOT_PASSWORD: "root"
     volumes:
-```
+      - ./docker/db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - test-network
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 31]**
+networks:
+  test-network:
+    driver: bridge
+```
 
 Добавляем в него описание network drivers bridge
 
-Запускаем контейнеры `$ docker-compose up`
+Запускаем контейнеры `docker-compose up`
+
+```bash
+sudo docker compose up
+```
 
 Проверяем количество запущенных контейнеров:
 
 ```bash
-$ docker ps
+sudo docker ps
 ```
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 32]**
+![Запуск пайплайна](img/docker-ps-3.png)
 
 Должно отобразиться три запущенных контейнера.
 
 Посмотрим наши сети:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 33]**
+```bash
+sudo docker network ls
+```
 
 | NETWORK ID   | NAME                         | DRIVER | SCOPE |
 | ------------ | ---------------------------- | ------ | ----- |
@@ -563,7 +629,7 @@ $ docker ps
 Теперь проинспектируем нашу сеть:
 
 ```bash
-$ docker network inspect 2-live-networks_test-network
+sudo docker network inspect 2-live-networks_test-network
 ```
 
 ```json
@@ -635,7 +701,7 @@ $ docker network inspect 2-live-networks_test-network
 Пробуем запустить наши контейнеры:
 
 ```bash
-$ docker-compose up
+sudo docker compose up
 ```
 
 И видим ошибку:
