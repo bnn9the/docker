@@ -185,6 +185,7 @@ sudo docker run -p 8080:8080 hwi
 ```bash
 curl localhost:8080
 ```
+
 Должно вывести:
 
 ```bash
@@ -216,140 +217,203 @@ sudo docker image ls | grep hwi
 
 В директории создаем следующие директории:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 13]**
+```bash
+mkdir networks
+```
+
+```bash
+cd ./networks
+```
+
+```bash
+mkdir code docker docker/nginx docker/php-fpm
+```
 
 В директориях создаем следующие файлы:
 
 **Docker-compose.ymal:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 14]**
+```bash
+version: '3' services:
+  nginx:
+    image: nginx:1.17.8
+  ports:
+    - "8080:80"
+  volumes:
+    -	./code:/code
+    -	./docker/nginx/site.conf:/etc/nginx/conf.d/site.conf
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 15]**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 16]**
+  php:
+    build:
+      context: docker/php-fpm
+      volumes:
+        -	./code:/code
+        -	./docker/php-fpm/php.ini:/usr/local/etc/php/php.ini
+
+
+  db:
+    ysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'base'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: '12345'
+      MYSQL_ROOT_PASSWORD: 'root'
+    volumes:
+      -	./docker/db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+```
 
 **code/index.php:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 17]**
+```php
+<?php
+$greetingWord = 'Hello!';
+echo '<div>' . $greetingWord . '</div>';
+```
 
 **docker/nginx/site.conf:**
 
 ```nginx
 server {
-```
+  index index.php index.html;
+  server_name base-dev.local;
+  error_log /var/log/nginx/error.log;
+  access_log /var/log/nginx/access.log;
+  root /code;
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 18]**
+  location ~ \.php$ {
+    try_files $uri =404;
+    fastcgi_split_path_info ^(.+\.php)(/.+)$; fastcgi_pass php:9000;
+    fastcgi_index index.php;
+    include fastcgi_params; fastcgi_param SCRIPT_FILENAME
+    $document_root$fastcgi_script_name;
+    fastcgi_param PATH_INFO $fastcgi_path_info;
+  }
+}
+```
 
 **docker/php-fpm/Dockerfile:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 19]**
+```Dockerfile
+FROM php:7.4-fpm
+
+RUN pecl install xdebug-2.9.1 \
+&& docker-php-ext-enable xdebug
+
+RUN docker-php-ext-install pdo_mysql
+```
 
 **docker/php-fpm/php.ini:**
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 20]**
+```php
+max_execution_time = 1000
+max_input_time = 1000
+```
 
 Запускаем сборку:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 21]**
+```bash
+sudo docker-compose up
+```
 
 Подождем этап сборки и запуска приложений в контейнерах:
 
-**[МЕСТО ДЛЯ ИЗОБРАЖЕНИЯ 22]**
-
-```
-=> => sha256:78fdfd2598e0ffdaa39011b909e2a79a75a60a0a87998f1072ec5d9256f19868 225B / 225B | 0.4s
-=> => sha256:26769c8659f467675c0f34948c16e051ea7aab69ec3198c65063c299b9771a05 91.60MB / 91.60MB | 18.3s
-=> => sha256:bdaf6fac8dceba28623cd6b0f4d8b8ea66c7fbbb234838f05a3eb6bfe083e69c 2.41kB / 2.41kB | 0.0s
-=> => sha256:2bd77e634ff6f1ca51fe0acbc5a57a231a5c35563c3cfd474e81eb160350d0f9 11.38kB / 11.38kB | 0.0s
-=> => sha256:4c6b8927a4757797e7e6d3e159cf5ec7f1c14171758b442aeac1f6ee3244d926 1.86kB / 1.86kB | 0.0s
-=> => sha256:b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7 31.38MB / 31.38MB | 5.1s
-=> => sha256:0bd105fadbe34a7e12eb66c424bd0de4b9c2c5c2daf01063eef044ff10e5e437 271B / 271B | 0.8s
-=> => sha256:2fadb39daff2b705ef90885be71ba6dace3eec5dac380662c17bff9c50714687 10.74MB / 10.74MB | 5.4s
-=> => sha256:acf0bff511002457219f797053d37f627e32240061fd4ecd4c18dd01901a8950 495B / 495B | 5.6s
-=> => extracting sha256:b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7 | 6.9s
-=> => sha256:402939ef1cc5a8c6bad9733a05f9ca1593f003e96bdf21c816d354153ea38c34 25.40MB / 25.40MB | 14.9s
-=> => sha256:6886d213a86f3c3fe28e21ccb352853d2b49bf867e4bb1c4ac56e0ca33da18b7 2.45kB / 2.45kB | 6.0s
-=> => sha256:89cb460f70a117898c9979657d357df8262a7d1e4ea0d56f08b97297b0f69eb6 244B / 244B | 6.8s
-=> => sha256:4fdf0d4fa32467559369089c9ca0e7249dc9e46b69d85c10ff6a65246e46e94f 8.45kB / 8.45kB | 7.4s
-=> => extracting sha256:78fdfd2598e0ffdaa39011b909e2a79a75a60a0a87998f1072ec5d9256f19868 | 0.0s
-=> => extracting sha256:26769c8659f467675c0f34948c16e051ea7aab69ec3198c65063c299b9771a05 | 10.1s
-=> => extracting sha256:0bd105fadbe34a7e12eb66c424bd0de4b9c2c5c2daf01063eef044ff10e5e437 | 0.0s
-=> => extracting sha256:2fadb39daff2b705ef90885be71ba6dace3eec5dac380662c17bff9c50714687 | 0.2s
-=> => extracting sha256:acf0bff511002457219f797053d37f627e32240061fd4ecd4c18dd01901a8950 | 0.0s
-=> => extracting sha256:402939ef1cc5a8c6bad9733a05f9ca1593f003e96bdf21c816d354153ea38c34 | 2.9s
-=> => extracting sha256:6886d213a86f3c3fe28e21ccb352853d2b49bf867e4bb1c4ac56e0ca33da18b7 | 0.0s
-=> => extracting sha256:89cb460f70a117898c9979657d357df8262a7d1e4ea0d56f08b97297b0f69eb6 | 0.0s
-=> => extracting sha256:4fdf0d4fa32467559369089c9ca0e7249dc9e46b69d85c10ff6a65246e46e94f | 0.0s
-=> [2/3] RUN pecl install xdebug-2.9.1 && docker-php-ext-enable xdebug | 42.8s
-=> [3/3] RUN docker-php-ext-install pdo_mysql | 19.3s
-=> exporting to image | 0.7s
-=> => exporting layers | 0.4s
-=> => writing image sha256:c6efbcfafd1752a062cdda8871025301bce783fbcd947d6048dd25bc86aabbc8 | 0.0s
-=> => naming to docker.io/library/2-live-networks_php | 0.0s
-
-
-Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
-[+] Running 4/4
-Network 2-live-networks_default Created 0.6s
-
-
-Container 2-live-networks-php-1 Created 2.1s
-Container 2-live-networks-nginx-1 Created 1.8s
-Container 2-live-networks-db-1 Created 2.1s
+```bash
+[+] Building 100.3s (7/7) FINISHED
+=> [internal] load build definition from Dockerfile
+=> => transferring dockerfile: 160B
+=> [internal] load .dockerignore
+=> => transferring context: 2B
+=> [internal] load metadata for docker.io/library/php:7.4-fpm
+=> [1/3] FROM docker.io/library/php:7.4-
+fpm@sha256:4c6b8927a4757797e7e6d3e159cf5ec7f1c14171758b442aeac1f6ee3244d926	34.5s
+=> => resolve docker.io/library/php:7.4- fpm@sha256:4c6b8927a4757797e7e6d3e159cf5ec7f1c14171758b442aeac1f6ee3244d926
+0.0s
+=> => sha256:78fdfd2598e0ffdaa39011b909e2a79a75a60a0a87998f1072ec5d9256f19868 225B / 225B	0.4s
+=> => sha256:26769c8659f467675c0f34948c16e051ea7aab69ec3198c65063c299b9771a05 91.60MB / 91.60MB	18.3s
+=> => sha256:bdaf6fac8dceba28623cd6b0f4d8b8ea66c7fbbb234838f05a3eb6bfe083e69c 2.41kB / 2.41kB	0.0s
+=> => sha256:2bd77e634ff6f1ca51fe0acbc5a57a231a5c35563c3cfd474e81eb160350d0f9 11.38kB / 11.38kB	0.0s
+=> => sha256:4c6b8927a4757797e7e6d3e159cf5ec7f1c14171758b442aeac1f6ee3244d926 1.86kB / 1.86kB	0.0s
+=> => sha256:b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7 31.38MB / 31.38MB	5.1s
+=> => sha256:0bd105fadbe34a7e12eb66c424bd0de4b9c2c5c2daf01063eef044ff10e5e437 271B / 271B	0.8s
+=> => sha256:2fadb39daff2b705ef90885be71ba6dace3eec5dac380662c17bff9c50714687 10.74MB / 10.74MB	5.4s
+=> => sha256:acf0bff511002457219f797053d37f627e32240061fd4ecd4c18dd01901a8950 495B / 495B	5.6s
+=> => extracting sha256:b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7	6.9s
+=> => sha256:402939ef1cc5a8c6bad9733a05f9ca1593f003e96bdf21c816d354153ea38c34 25.40MB / 25.40MB	14.9s
+=> => sha256:6886d213a86f3c3fe28e21ccb352853d2b49bf867e4bb1c4ac56e0ca33da18b7 2.45kB / 2.45kB	6.0s
+=> => sha256:89cb460f70a117898c9979657d357df8262a7d1e4ea0d56f08b97297b0f69eb6 244B / 244B	6.8s
+=> => sha256:4fdf0d4fa32467559369089c9ca0e7249dc9e46b69d85c10ff6a65246e46e94f 8.45kB / 8.45kB	7.4s
+=> => extracting sha256:78fdfd2598e0ffdaa39011b909e2a79a75a60a0a87998f1072ec5d9256f19868	0.0s
+=> => extracting sha256:26769c8659f467675c0f34948c16e051ea7aab69ec3198c65063c299b9771a05	10.1s
+=> => extracting sha256:0bd105fadbe34a7e12eb66c424bd0de4b9c2c5c2daf01063eef044ff10e5e437	0.0s
+=> => extracting sha256:2fadb39daff2b705ef90885be71ba6dace3eec5dac380662c17bff9c50714687	0.2s
+=> => extracting sha256:acf0bff511002457219f797053d37f627e32240061fd4ecd4c18dd01901a8950	0.0s
+=> => extracting sha256:402939ef1cc5a8c6bad9733a05f9ca1593f003e96bdf21c816d354153ea38c34	2.9s
+=> => extracting sha256:6886d213a86f3c3fe28e21ccb352853d2b49bf867e4bb1c4ac56e0ca33da18b7	0.0s
+=> => extracting sha256:89cb460f70a117898c9979657d357df8262a7d1e4ea0d56f08b97297b0f69eb6	0.0s
+=> => extracting sha256:4fdf0d4fa32467559369089c9ca0e7249dc9e46b69d85c10ff6a65246e46e94f	0.0s
+=> [2/3] RUN pecl install xdebug-2.9.1	&& docker-php-ext-enable xdebug	42.8s
+=> [3/3] RUN docker-php-ext-install pdo_mysql	19.3s
+=> exporting to image	0.7s
+=> => exporting layers	0.4s
+=> => writing image sha256:c6efbcfafd1752a062cdda8871025301bce783fbcd947d6048dd25bc86aabbc8	0.0s
+=> => naming to docker.io/library/2-live-networks_php	0.0s
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them [+] Running 4/4
+-	Network 2-live-networks_default	Created	0.6s
+-	Container 2-live-networks-php-1	Created	2.1s
+-	Container 2-live-networks-nginx-1 Created	1.8s
+-	Container 2-live-networks-db-1	Created	2.1s
 Attaching to 2-live-networks-db-1, 2-live-networks-nginx-1, 2-live-networks-php-1
-2-live-networks-db-1 | 2022-06-23 17:27:43+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
-2-live-networks-php-1 | [23-Jun-2022 17:27:44] NOTICE: fpm is running, pid 1
-2-live-networks-php-1 | [23-Jun-2022 17:27:44] NOTICE: ready to handle connections
-2-live-networks-db-1 | 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
-2-live-networks-db-1 | 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
-2-live-networks-db-1 | 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Initializing database files
-2-live-networks-db-1 | 2022-06-23T17:27:45.646119Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.29) initializing of server in progress as process 44
-2-live-networks-db-1 | 2022-06-23T17:27:45.703261Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
-2-live-networks-db-1 | 2022-06-23T17:27:45.817354Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2-live-networks-db-1 | 2022-06-23T17:27:52.307662Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2-live-networks-db-1 | 2022-06-23T17:28:02.416249Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2-live-networks-db-1 | 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Database files initialized
-2-live-networks-db-1 | 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Starting temporary server
-
-
-2-live-networks-db-1 | 2022-06-23T17:28:20.784151Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.29) starting as process 93
-2-live-networks-db-1 | 2022-06-23T17:28:20.799480Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
-2-live-networks-db-1 | 2022-06-23T17:28:20.853460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2-live-networks-db-1 | 2022-06-23T17:28:22.495678Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2-live-networks-db-1 | 2022-06-23T17:28:23.987921Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2-live-networks-db-1 | 2022-06-23T17:28:23.988803Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2-live-networks-db-1 | 2022-06-23T17:28:24.048946Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
-2-live-networks-db-1 | 2022-06-23T17:28:24.220678Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
-2-live-networks-db-1 | 2022-06-23T17:28:24.224287Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.29' socket: '/var/run/mysqld/mysqld.sock' port: 0 MySQL Community Server - GPL.
-2-live-networks-db-1 | 2022-06-23 17:28:24+00:00 [Note] [Entrypoint]: Temporary server started.
-2-live-networks-db-1 | Warning: Unable to load '/usr/share/zoneinfo/iso3166.tab' as time zone. Skipping it.
-2-live-networks-db-1 | Warning: Unable to load '/usr/share/zoneinfo/leap-seconds.list' as time zone. Skipping it.
-2-live-networks-db-1 | Warning: Unable to load '/usr/share/zoneinfo/zone.tab' as time zone. Skipping it.
-
-
-2-live-networks-db-1 | Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
-2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating database base
-2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating user user
-2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Giving user user access to schema base
-2-live-networks-db-1 |
-2-live-networks-db-1 | 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Stopping temporary server
-2-live-networks-db-1 | 2022-06-23T17:28:34.642435Z 13 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.29).
-2-live-networks-db-1 | 2022-06-23T17:28:37.759863Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.29) MySQL Community Server - GPL.
-2-live-networks-db-1 | 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: Temporary server stopped
-2-live-networks-db-1 |
-2-live-networks-db-1 | 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: MySQL init process done. Ready for start up.
-2-live-networks-db-1 |
-2-live-networks-db-1 | 2022-06-23T17:28:39.070794Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.29) starting as process 1
-2-live-networks-db-1 | 2022-06-23T17:28:39.104767Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
-2-live-networks-db-1 | 2022-06-23T17:28:39.204213Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2-live-networks-db-1 | 2022-06-23T17:28:45.766135Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-
-
-2-live-networks-db-1 | 2022-06-23T17:28:48.968577Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2-live-networks-db-1 | 2022-06-23T17:28:48.971560Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2-live-networks-db-1 | 2022-06-23T17:28:49.269435Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
-2-live-networks-db-1 | 2022-06-23T17:28:49.684209Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2-live-networks-db-1 | 2022-06-23T17:28:49.684301Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.29' socket: '/var/run/mysqld/mysqld.sock' port: 3306 MySQL Community Server - GPL.
+2-live-networks-db-1	| 2022-06-23 17:27:43+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
+2-live-networks-php-1	| [23-Jun-2022 17:27:44] NOTICE: fpm is running, pid 1
+2-live-networks-php-1	| [23-Jun-2022 17:27:44] NOTICE: ready to handle connections
+2-live-networks-db-1	| 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2-live-networks-db-1	| 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.29-1debian10 started.
+2-live-networks-db-1	| 2022-06-23 17:27:45+00:00 [Note] [Entrypoint]: Initializing database files
+2-live-networks-db-1	| 2022-06-23T17:27:45.646119Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.29) initializing of server in progress as process 44
+2-live-networks-db-1	| 2022-06-23T17:27:45.703261Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
+2-live-networks-db-1	| 2022-06-23T17:27:45.817354Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2-live-networks-db-1	| 2022-06-23T17:27:52.307662Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2-live-networks-db-1	| 2022-06-23T17:28:02.416249Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the
+--initialize-insecure option.
+2-live-networks-db-1	| 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Database files initialized 2-live-networks-db-1	| 2022-06-23 17:28:20+00:00 [Note] [Entrypoint]: Starting temporary server
+2-live-networks-db-1	| 2022-06-23T17:28:20.784151Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.29) starting as process 93
+2-live-networks-db-1	| 2022-06-23T17:28:20.799480Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
+2-live-networks-db-1	| 2022-06-23T17:28:20.853460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2-live-networks-db-1	| 2022-06-23T17:28:22.495678Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2-live-networks-db-1	| 2022-06-23T17:28:23.987921Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2-live-networks-db-1	| 2022-06-23T17:28:23.988803Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported
+for this channel.
+2-live-networks-db-1	| 2022-06-23T17:28:24.048946Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+2-live-networks-db-1	| 2022-06-23T17:28:24.220678Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
+2-live-networks-db-1	| 2022-06-23T17:28:24.224287Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.29' socket: '/var/run/mysqld/mysqld.sock' port: 0 MySQL Community Server - GPL.
+2-live-networks-db-1	| 2022-06-23 17:28:24+00:00 [Note] [Entrypoint]: Temporary server started.
+2-live-networks-db-1	| Warning: Unable to load '/usr/share/zoneinfo/iso3166.tab' as time zone. Skipping it.
+2-live-networks-db-1	| Warning: Unable to load '/usr/share/zoneinfo/leap-seconds.list' as time zone. Skipping it.
+2-live-networks-db-1	| Warning: Unable to load '/usr/share/zoneinfo/zone.tab' as time zone. Skipping it.
+2-live-networks-db-1	| Warning: Unable to load '/usr/share/zoneinfo/zone1970.tab' as time zone. Skipping it.
+2-live-networks-db-1	| 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating database base 2-live-networks-db-1	| 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Creating user user
+2-live-networks-db-1	| 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Giving user user access to schema base
+2-live-networks-db-1	|
+2-live-networks-db-1	| 2022-06-23 17:28:34+00:00 [Note] [Entrypoint]: Stopping temporary server
+2-live-networks-db-1	| 2022-06-23T17:28:34.642435Z 13 [System] [MY-013172] [Server] Received SHUTDOWN from user root. Shutting down mysqld (Version: 8.0.29).
+2-live-networks-db-1	| 2022-06-23T17:28:37.759863Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.29) MySQL Community Server - GPL.
+2-live-networks-db-1	| 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: Temporary server stopped 2-live-networks-db-1	|
+2-live-networks-db-1	| 2022-06-23 17:28:38+00:00 [Note] [Entrypoint]: MySQL init process done. Ready for start up.
+2-live-networks-db-1	|
+2-live-networks-db-1	| 2022-06-23T17:28:39.070794Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.29) starting as process 1
+2-live-networks-db-1	| 2022-06-23T17:28:39.104767Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /var/lib/mysql/ is case insensitive
+2-live-networks-db-1	| 2022-06-23T17:28:39.204213Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2-live-networks-db-1	| 2022-06-23T17:28:45.766135Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2-live-networks-db-1	| 2022-06-23T17:28:48.968577Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2-live-networks-db-1	| 2022-06-23T17:28:48.971560Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported
+for this channel.
+2-live-networks-db-1	| 2022-06-23T17:28:49.269435Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+2-live-networks-db-1	| 2022-06-23T17:28:49.684209Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+2-live-networks-db-1	| 2022-06-23T17:28:49.684301Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.29' socket: '/var/run/mysqld/mysqld.sock' port: 3306
 ```
 
 Проверяем запуск наших контейнеров:
